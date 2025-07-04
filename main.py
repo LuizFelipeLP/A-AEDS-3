@@ -1,8 +1,8 @@
+# Isso é uma biblioteca do python para trabalhar com operações com heap, que é uma fila de prioridade
 import heapq
-import networkx as nx
-import matplotlib.pyplot as plt
 
-# === Grafo e heurística (iguais ao anterior) ===
+# Grafo com apenas cidades da nossa região (valores fictícios em km)
+# Tanto o grafo quanto a heuristica são dicionarios: Chave valor. (no caso, grafo é um dicionário para dicionário)
 grafo = {
     'São João do Paraíso': {'Taiobeiras': 20, 'Rio Pardo de Minas': 25},
     'Taiobeiras': {'Salinas': 35, 'Itaobim': 55},
@@ -19,6 +19,7 @@ grafo = {
     'Montes Claros': {}
 }
 
+# Heurística = distância reta até Montes Claros. (valores totalmente reais)
 heuristica = {
     'São João do Paraíso': 90,
     'Taiobeiras': 80,
@@ -35,60 +36,42 @@ heuristica = {
     'Montes Claros': 0
 }
 
-# === Algoritmo A* com retorno do caminho ===
 def a_estrela(inicio, objetivo):
+    # Fila de prioridade: f, cidade, caminho até agora, g. (Cada item é uma tupla com esses quatro valres)
     fila = []
+    # Talvez aqui surja a dúvida do por que está salvando a heuristica no lugar que deveria ser para
+    # a soma da própria com o custo real (g). Acontece que, no começo, esse custo real é igual a zero,
+    # então f = h (heuristica). Nos próximos passos g vai ganhar 'peso' e o cálculo começa a ser feito.
+    # heapq.heappush adciona um item na flia
     heapq.heappush(fila, (heuristica[inicio], inicio, [inicio], 0))
 
+# Esse while vai rodar enquanto tiver elementos na lista
     while fila:
+        # f_atual é a soma da heuristica + custo real, mais promissor (menor).
+        # O  heapq.heappop remove e retorna o menor elemento da lista.
         f_atual, atual, caminho, g = heapq.heappop(fila)
 
-        if atual == objetivo:
-            return caminho, g  # Retorna caminho e custo
+        print(f"\n🔎 Explorando: {atual} | f={f_atual} | g={g}")
 
+        if atual == objetivo:
+            print("\nCaminho encontrado!")
+            # Esse join() serve para unir elemento em uma única string, e a -> é o delimitador (NESSE CASO)
+            # Como se estivesse fazendo assim: "Cidade" + "->" + "Cidade" +...
+            print(" -> ".join(caminho))
+            print(f"Custo total: {g} km")
+            return
+        # Esse for percorre todos os vizinhos do atual e muda suas informações com as informações do anteriores
         for vizinho, custo in grafo[atual].items():
             g_novo = g + custo
             h_novo = heuristica[vizinho]
             f_novo = g_novo + h_novo
+
+            print(f"  ↳ Vizinho: {vizinho} | g={g_novo} | h={h_novo} | f={f_novo}")
+            # Ta adicionando os vizinhos na fila, já com f mudado
             heapq.heappush(fila, (f_novo, vizinho, caminho + [vizinho], g_novo))
 
-    return None, float('inf')
+    print("\n!!! Caminho não encontrado. !!!")
 
-# === Visualização com networkx ===
-def desenhar_grafo(caminho=None):
-    G = nx.DiGraph()
-
-    # Adiciona as arestas com peso
-    for origem, vizinhos in grafo.items():
-        for destino, peso in vizinhos.items():
-            G.add_edge(origem, destino, weight=peso)
-
-    pos = nx.spring_layout(G, seed=42)  # Layout automático fixo
-
-    # Desenha todos os nós e arestas
-    nx.draw(G, pos, with_labels=True, node_color='lightgray', node_size=1800, font_size=9, edge_color='gray')
-    nx.draw_networkx_edge_labels(G, pos, edge_labels={(u, v): d['weight'] for u, v, d in G.edges(data=True)})
-
-    # Se houver caminho, destacar em azul
-    if caminho:
-        path_edges = list(zip(caminho, caminho[1:]))
-        nx.draw_networkx_edges(G, pos, edgelist=path_edges, edge_color='blue', width=3)
-        nx.draw_networkx_nodes(G, pos, nodelist=caminho, node_color='skyblue')
-
-    plt.title("Mapa de cidades com caminho A* destacado")
-    plt.show()
-
-# === Execução ===
+# Execução do A*
 if __name__ == "__main__":
-    inicio = 'São João do Paraíso'
-    destino = 'Montes Claros'
-    caminho, custo = a_estrela(inicio, destino)
-
-    if caminho:
-        print("\n✅ Caminho encontrado:")
-        print(" -> ".join(caminho))
-        print(f"Custo total: {custo} km")
-    else:
-        print("❌ Caminho não encontrado.")
-
-    desenhar_grafo(caminho)
+    a_estrela('São João do Paraíso', 'Montes Claros')
